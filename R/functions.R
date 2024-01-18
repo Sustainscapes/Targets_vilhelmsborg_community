@@ -1,13 +1,10 @@
-get_data <- function(file) {
-  readxl::read_xlsx(file) |>
-    janitor::clean_names() |>
-    dplyr::filter(rige == "Plantae") |>
-    dplyr::filter(taxonrang %in% c("Art", "Form", "Superart", "Underart", "Varietet")) |>
-    dplyr::filter(herkomst != "Introduceret" | is.na(herkomst)) |>
-    dplyr::select(videnskabeligt_navn, taxonrang) |>
-    dplyr::distinct()
+get_field_presences <- function(file) {
+ Temp <- readRDS(file) %>%
+   dplyr::filter(PA == 1) %>%
+   janitor::clean_names() %>%
+   dplyr::select(lat, lon, familie, slaegt, latinsk_navn) %>%
+   dplyr::rename(decimalLatitude = lat, decimalLongitude = lon, family = familie, genus =slaegt, species = latinsk_navn)
 }
-
 
 clean_species <- function(df){
   Clean_Species <- SDMWorkflows::Clean_Taxa(Taxons = df$videnskabeligt_navn)

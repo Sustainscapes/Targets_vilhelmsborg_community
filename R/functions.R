@@ -7,7 +7,7 @@ get_field_presences <- function(file) {
 }
 
 clean_species <- function(df){
-  Clean_Species <- SDMWorkflows::Clean_Taxa(Taxons = df$videnskabeligt_navn)
+  Clean_Species <- SDMWorkflows::Clean_Taxa(Taxons = df$species)
 }
 
 filter_plants <- function(df){

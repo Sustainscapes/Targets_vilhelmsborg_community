@@ -6,6 +6,14 @@ get_field_presences <- function(file) {
    dplyr::rename(decimalLatitude = lat, decimalLongitude = lon, family = familie, genus =slaegt, species = latinsk_navn)
 }
 
+get_field_presences_csv <- function(file) {
+  Temp <- read.csv(file, sep = ";") %>%
+    dplyr::filter(PA == 1) %>%
+    janitor::clean_names() %>%
+    dplyr::select(lat, lon, familie, slaegt, latinsk_navn) %>%
+    dplyr::rename(decimalLatitude = lat, decimalLongitude = lon, family = familie, genus =slaegt, species = latinsk_navn)
+}
+
 clean_species <- function(df){
   Clean_Species <- SDMWorkflows::Clean_Taxa(Taxons = df$species)
 }
@@ -32,7 +40,7 @@ count_presences <- function(species){
   return(DF)
 }
 
-filter_counts <- function(DT, n = 1){
+Filter_Counts <- function(DT, n = 1){
   DT <- DT[N >= n]
   return(DT)
 }
@@ -261,14 +269,14 @@ Generate_Lookup <- function(Model, Thresholds) {
 generate_landuse_table <- function(path){
   DF <- terra::rast(path) |>
     terra::as.data.frame(cells = T) |>
-    dplyr::filter(DryPoor == 1 | DryRich == 1 | WetPoor == 1 | WetRich == 1)
+    dplyr::filter(ForestDryPoor == 1 | ForestDryRich == 1 | ForestWetPoor == 1 | ForestWetRich == 1 | OpenDryPoor == 1 | OpenDryRich == 1 | OpenWetPoor == 1)
   return(DF)
 }
 
 
 Make_Long_LU_table <- function(DF){
   DF <-  as.data.table(DF) |> melt(id.vars       = "cell",
-                                   measure.vars  = c("DryPoor", "DryRich", "WetPoor", "WetRich"),
+                                   measure.vars  = c("ForestDryPoor", "ForestDryRich", "ForestWetPoor", "ForestWetRich","OpenDryPoor","OpenDryRich","OpenWetPoor","OpenWetRich"),
                                    variable.name = "Habitat",
                                    value.name    = "Suitability", na.rm = T)
   DF <- DF[Suitability > 0]

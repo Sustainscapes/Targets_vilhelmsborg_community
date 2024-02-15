@@ -9,31 +9,42 @@ tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magritt
                controller = crew_controller_local(workers = 4),
                error = "null") # Force skip non-debugging outdated targets)
 list(
+#Path to the Habitat model raster output of potential habitat types
   tar_target(LanduseSuitability,
              "HabSut/Aarhus.tif",
              format = "file"),
+#Path to the raster of current land use (nature??)
   tar_target(LandUseTiff,
              "Dir/LU_Aarhus.tif",
              format = "file"),
+#Path to the presences data of plant species in existing nature plots (from fieldwork)
   tar_target(Species_cover,
              "feltdata_exisiting_nature_plots.rds",
              format = "file"),
+#Loading and grouping the observations pr. species (existing nature, fieldwork)
   tarchetypes::tar_group_by(field_presences, get_field_presences(Species_cover), species),
+#Path to the presences data of plant specie in new nature plots (from fieldwork)
   tar_target(Species_newnature,
              "feltdata_new_nature_plots.csv",
              format = "file"),
+#Loading and grouping the observations pr. species (existing nature, fieldwork)
   tarchetypes::tar_group_by(field_presences_newnature, get_field_presences_csv(Species_newnature), species),
+#Combining the observations from both new and existing nature (from fieldwork)
   tar_target(Species_observations,
              bind_rows(field_presences,field_presences_newnature)),
+#Loading plant species presences from GBIF
   tar_target(Presences,
              get_plant_presences(Filter_Counts),
              pattern = map(Filter_Counts)),
+#Creating a buffer of 500m around each species observation to account for dispersal
   tar_target(buffer_500, make_buffer_rasterized(DT = field_presences, file = LandUseTiff),
              pattern = map(field_presences),
              iteration = "group"),
+#Creating a longer buffer??
   tar_target(Long_Buffer, make_long_buffer(DT = buffer_500),
              pattern = map(buffer_500),
              iteration = "group"),
+#Generating a phylogenetic tree of the observed species
   tar_target(Phylo_Tree, generate_tree(field_presences)),
   tar_target(ModelAndPredict, ModelAndPredictFunc(DF =  field_presences, file = LandUseTiff),
              pattern = map(field_presences)),
@@ -41,6 +52,7 @@ list(
   tar_target(Thresholds, create_thresholds(Model = ModelAndPredict,reference = field_presences, LandUseTiff),
              pattern = map(ModelAndPredict, field_presences),
              iteration = "group"),
+#Creates a lookup table for suitable habitat types for each species
   tar_target(LookUpTable, Generate_Lookup(Model = ModelAndPredict, Thresholds = Thresholds)),
   tar_target(LanduseTable, generate_landuse_table(path = LanduseSuitability)),
   tar_target(Long_LU_table, Make_Long_LU_table(DF = LanduseTable)),

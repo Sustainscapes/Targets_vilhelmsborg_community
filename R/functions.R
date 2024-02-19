@@ -1,3 +1,4 @@
+#Function to load fiedlwork data from existing nature plots
 get_field_presences <- function(file) {
  Temp <- readRDS(file) %>%
    dplyr::filter(PA == 1) %>%
@@ -6,6 +7,7 @@ get_field_presences <- function(file) {
    dplyr::rename(decimalLatitude = lat, decimalLongitude = lon, family = familie, genus =slaegt, species = latinsk_navn)
 }
 
+#Function to laod field data from new nature plots
 get_field_presences_csv <- function(file) {
   Temp <- read.csv(file, sep = ";") %>%
     dplyr::filter(PA == 1) %>%
@@ -14,44 +16,64 @@ get_field_presences_csv <- function(file) {
     dplyr::rename(decimalLatitude = lat, decimalLongitude = lon, family = familie, genus =slaegt, species = latinsk_navn)
 }
 
+
+#Function for cleaning species names
 clean_species <- function(df){
-  Clean_Species <- SDMWorkflows::Clean_Taxa(Taxons = df$species)
+  Clean_Species <- SDMWorkflows::Clean_Taxa(Taxons = df$scientificName)
+  return(Clean_Species)
 }
 
-filter_plants <- function(df){
-  result <- df |>
-    dplyr::filter(kingdom == "Plantae") |>
-    dplyr::select("family", "genus", "species") |>
-    distinct()
-  result <- result[1:800,]
-  return(result)
+#Function for creating an empty dataframe
+create_empty_df <- function(columns) {
+  # Create an empty dataframe with specified columns
+  empty_df <- data.frame(
+    family = rep(character(), columns),  # Create an empty character vector for the 'family' column
+    genus = rep(character(), columns),   # Create an empty character vector for the 'genus' column
+    species = rep(character(), columns)  # Create an empty character vector for the 'species' column
+  )
+  return(empty_df)
 }
 
+#Function for importing presences data from GBIF
 count_presences <- function(species){
   DF <- data.table(
                   family = species$family,
                   genus = species$genus,
                   species = species$species,
-                   N = rgbif::occ_count(scientificName = species$species,
-                                        hasCoordinate = T,
-                                        country = "DK",
-                                        hasGeospatialIssue = FALSE,
-                                        year='1999,2023'))
+                   N = rgbif::occ_count(hasCoordinate = T,
+                                        geometry = Aarhus_txt,
+                                        year = '2012,2023',
+                                        facet = 'scientificName',
+                                        facetLimit=100000,
+                                        kingdomKey=6))
   return(DF)
 }
+
+#Function for importing presences data from GBIF second version
+gbif_observations <- function(area){
+  DF <- data.table(rgbif::occ_count(hasCoordinate = T,
+                         geometry = area,
+                         year = '2012,2023',
+                         facet = 'scientificName',
+                         facetLimit=100000,
+                         kingdomKey=6))
+  return(DF)
+}
+
 
 Filter_Counts <- function(DT, n = 1){
   DT <- DT[N >= n]
   return(DT)
 }
 
+#This function imports the locations of the species observations from GBIF
 get_plant_presences <- function(species){
  DF<- SDMWorkflows::GetOccs(Species = unique(species$species),
                         WriteFile = FALSE,
                         Log = FALSE,
-                        country = "DK",
+                        geometry = Aarhus_txt,
                         limit = 100000,
-                        year='1999,2023')
+                        year='2012,2023')
     try(DF <- DF[[1]] |> dplyr::select(scientificName, decimalLatitude, decimalLongitude, family, genus, species))
     return(DF)
 }

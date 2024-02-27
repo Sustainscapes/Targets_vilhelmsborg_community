@@ -62,7 +62,7 @@ gbif_observations <- function(area){
 
 
 Filter_Counts <- function(DT, n = 1){
-  DT <- DT[N >= n]
+  DT <- DT[count >= n]
   return(DT)
 }
 
@@ -78,7 +78,74 @@ get_plant_presences <- function(species){
     return(DF)
 }
 
+#Function for importing data from GBIF third version
+get_plant_occurrences <- function() {
+  # Explicitly load required packages
+  library(rgbif)
+  library(dplyr)
 
+  # Search for occurrences in Denmark
+  denmark_occurrences <- occ_search(kingdomKey = 6,
+                                    facet = 'scientificName',
+                                    geometry = Aarhus_txt,
+                                    hasCoordinate = TRUE,
+                                    year = '2012,2023',
+                                    limit = 3000)  # adjust limit as needed
+
+  # Extract the species occurrences
+  species_occurrences <- denmark_occurrences$data %>%
+    select(species = species,
+           genus = genus,
+           family = family,
+           latitude = decimalLatitude,
+           longitude = decimalLongitude)
+
+  # Return the dataframe
+  return(species_occurrences)
+}
+
+#Function for importing GBIF data, fourth version
+get_plant_presences2 <- function(species){
+  DF <- SDMWorkflows::GetOccs(Species = unique(species$species),
+                              WriteFile = FALSE,
+                              Log = FALSE,
+                              geometry = Aarhus_txt,
+                              limit = 100000,
+                              year = '2012,2023')
+
+  # Ensure consistent structure of DF
+  if (length(DF) == 0 || all(sapply(DF, is.null))) {
+    # If DF is empty or all branches are NULL, return an empty list
+    return(list(data.frame(scientificName = character(),
+                           decimalLatitude = numeric(),
+                           decimalLongitude = numeric(),
+                           family = character(),
+                           genus = character(),
+                           species = character())))
+  } else {
+    # Otherwise, process DF
+    DF <- Filter(Negate(is.null), DF)  # Remove NULL branches
+    DF <- lapply(DF, function(x) {
+      if (is.data.frame(x)) {
+        x  # If already a data frame, return as is
+      } else {
+        x[[1]]  # If a list with one element, extract the data frame
+      }
+    })
+
+    # Combine data frames
+    try(DF <- do.call(rbind, DF))
+
+    # Select specific columns
+    DF <- dplyr::select(DF, scientificName, decimalLatitude, decimalLongitude, family, genus, species)
+
+    return(DF)
+  }
+}
+
+
+
+#Function for generating phylogenetic tree
 generate_tree <- function(DF){
   Tree <- as.data.frame(DF) |>
     dplyr::select(species, genus, family) |>

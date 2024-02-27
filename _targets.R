@@ -7,6 +7,7 @@ library(terra)
 library(geodata)
 library(rgbif)
 library(sf)
+library(dplyr)
 
 
 tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magrittr", "maxnet", "purrr", "Rarity", "readxl",
@@ -57,37 +58,43 @@ list(
              full_join(field_presences,field_presences_newnature)),
 
 #Loading plant species presences from GBIF
+  #tar_target(GBIF_occ,get_plant_occurrences()),
   tar_target(GBIF_obs,
              gbif_observations(area = Aarhus_txt)),
   tar_target(Clean_GBIF_obs,
-             clean_species(GBIF_obs)),
-  tar_target(Clean_GBIF_obs_ungrouped,
-             ungroup(Clean_GBIF_obs)),
+             clean_species(Filter_Counts(GBIF_obs))),
+  #tar_target(Clean_GBIF_obs_ungrouped,
+   #          ungroup(Clean_GBIF_obs)),
+  tar_target(Clean_GBIF_obs_subset,
+             Clean_GBIF_obs[1:500,]),
   tar_target(Presences,
-             get_plant_presences(Clean_GBIF_obs_ungrouped),
-             pattern = map(Clean_GBIF_obs_ungrouped)),
+             get_plant_presences2(Clean_GBIF_obs),
+             pattern = map(Clean_GBIF_obs)),
 
 #Joining the data from GBIF and the fieldwork
   tar_target(joint_data,
-             full_join(Species_observatios,Presences)),
+             full_join(Species_observations,Presences)),
 
 #Creating a buffer of 500m around each species observation to account for dispersal
-  tar_target(buffer_500, make_buffer_rasterized(DT = Species_observations, file = LandUseTiff),
+  tar_target(buffer_500, make_buffer_rasterized(DT = Presences, file = LandUseTiff),
              pattern = map(Species_observations),
              iteration = "group"),
 #Transforming the buffer into a dataframe
   tar_target(Long_Buffer, make_long_buffer(DT = buffer_500),
              pattern = map(buffer_500),
              iteration = "group"),
+
 #Generating a phylogenetic tree of the observed species
   tar_target(Phylo_Tree, generate_tree(Species_observations)),
-#Modelling the ???
+
+#Modelling the the species distribution based on the habitat types in the raster map of present nature
   tar_target(ModelAndPredict, ModelAndPredictFunc(DF =  Species_observations, file = LandUseTiff),
              pattern = map(Species_observations)),
              #iteration = "group"),
   tar_target(Thresholds, create_thresholds(Model = ModelAndPredict,reference = Species_observations, LandUseTiff),
              pattern = map(ModelAndPredict, Species_observations),
              iteration = "group"),
+
 #Creates a lookup table for suitable habitat types for each species
   tar_target(LookUpTable, Generate_Lookup(Model = ModelAndPredict, Thresholds = Thresholds)),
   tar_target(LanduseTable, generate_landuse_table(path = LanduseSuitability)),

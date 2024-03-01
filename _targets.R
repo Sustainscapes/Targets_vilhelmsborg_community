@@ -8,6 +8,8 @@ library(geodata)
 library(rgbif)
 library(sf)
 library(dplyr)
+library(readxl)
+library(readr)
 
 
 tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magrittr", "maxnet", "purrr", "Rarity", "readxl",
@@ -62,14 +64,16 @@ list(
   tar_target(GBIF_obs,
              gbif_observations(area = Aarhus_txt)),
   tar_target(Clean_GBIF_obs,
-             clean_species(Filter_Counts(GBIF_obs))),
-  #tar_target(Clean_GBIF_obs_ungrouped,
-   #          ungroup(Clean_GBIF_obs)),
-  tar_target(Clean_GBIF_obs_subset,
-             Clean_GBIF_obs[1:500,]),
-  tar_target(Presences,
-             get_plant_presences2(Clean_GBIF_obs),
-             pattern = map(Clean_GBIF_obs)),
+             clean_species(Filter_Counts(GBIF_obs))), #This output is cleaned for 18 species that did not work when I tried to run Presences, see debugging file.
+  tar_target(GBIF_species,
+             read_delim("GBIF_observations.csv",
+                        delim = ";", escape_double = FALSE, trim_ws = TRUE)),
+  #tar_target(Presences,
+             #get_plant_presences2(GBIF_species),
+             #pattern = map(GBIF_species)),
+#We import the csv so we don't have to run the whole thing again
+  tar_target(Presences, read_delim("GBIF_presences.csv",
+                                 delim = ";", escape_double = FALSE, trim_ws = TRUE)),
 
 #Joining the data from GBIF and the fieldwork
   tar_target(joint_data,
@@ -77,7 +81,7 @@ list(
 
 #Creating a buffer of 500m around each species observation to account for dispersal
   tar_target(buffer_500, make_buffer_rasterized(DT = Presences, file = LandUseTiff),
-             pattern = map(Species_observations),
+             pattern = map(Presences),
              iteration = "group"),
 #Transforming the buffer into a dataframe
   tar_target(Long_Buffer, make_long_buffer(DT = buffer_500),
@@ -85,18 +89,21 @@ list(
              iteration = "group"),
 
 #Generating a phylogenetic tree of the observed species
-  tar_target(Phylo_Tree, generate_tree(Species_observations)),
+  tar_target(Phylo_Tree, generate_tree(Presences)),
 
 #Modelling the the species distribution based on the habitat types in the raster map of present nature
-  tar_target(ModelAndPredict, ModelAndPredictFunc(DF =  Species_observations, file = LandUseTiff),
-             pattern = map(Species_observations)),
+  #tar_target(ModelAndPredict, ModelAndPredictFunc(DF =  Presences, file = LandUseTiff),
+             #pattern = map(Presences)),
              #iteration = "group"),
-  tar_target(Thresholds, create_thresholds(Model = ModelAndPredict,reference = Species_observations, LandUseTiff),
-             pattern = map(ModelAndPredict, Species_observations),
-             iteration = "group"),
+  #tar_target(Thresholds, create_thresholds(Model = ModelAndPredict,reference = Presences, LandUseTiff),
+             #pattern = map(ModelAndPredict, Presences),
+             #iteration = "group"),
 
 #Creates a lookup table for suitable habitat types for each species
-  tar_target(LookUpTable, Generate_Lookup(Model = ModelAndPredict, Thresholds = Thresholds)),
+  #tar_target(LookUpTable, Generate_Lookup(Model = ModelAndPredict, Thresholds = Thresholds)),
+#We just use the lookup table that Derek has already created for all of DK
+  tar_target(LookUpTable,
+             read_excel("species_lookup.xlsx")),
   tar_target(LanduseTable, generate_landuse_table(path = LanduseSuitability)),
   tar_target(Long_LU_table, Make_Long_LU_table(DF = LanduseTable)),
   tar_target(Final_Presences, make_final_presences(Long_LU_table, Long_Buffer, LookUpTable),

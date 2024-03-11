@@ -10,6 +10,7 @@ library(sf)
 library(dplyr)
 library(readxl)
 library(readr)
+library(data.table)
 
 
 tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magrittr", "maxnet", "purrr", "Rarity", "readxl",
@@ -28,6 +29,11 @@ Aarhus_txt <- Aarhus|>       #Here we make it as a square polygon (bounding box)
   st_as_sfc() |>
   st_as_text()
 
+#Polygon for 2000m radius around Vilhelmsborg
+c2000m <- vect("circle_2000_Vilhelm.shp")
+c2000m_proj <- project(c2000m,"+proj=longlat +datum=WGS84")
+Vilhelm_txt <- c2000m_proj %>% st_as_sf() %>% st_bbox() %>% st_as_sfc() %>% st_as_text()
+
 list(
 #Path to the Habitat model raster output of potential habitat types
   tar_target(LanduseSuitability,
@@ -36,7 +42,7 @@ list(
 
 #Path to the raster of current land use in terms of habitat types
   tar_target(LandUseTiff,
-             "Dir/LU_Aarhus.tif",
+             "Dir/LU_vilhelmsborg.tif",
              format = "file"),
 
 #Path to the presences data of plant species in existing nature plots (from fieldwork)
@@ -62,31 +68,40 @@ list(
 #Loading plant species presences from GBIF
   #tar_target(GBIF_occ,get_plant_occurrences()),
   tar_target(GBIF_obs,
-             gbif_observations(area = Aarhus_txt)),
+             gbif_observations(area = Vilhelm_txt)),
   tar_target(Clean_GBIF_obs,
              clean_species(Filter_Counts(GBIF_obs))), #This output is cleaned for 18 species that did not work when I tried to run Presences, see debugging file.
   tar_target(GBIF_species,
-             read_delim("GBIF_observations.csv",
+             read_delim("GBIF_observations2.csv",
                         delim = ";", escape_double = FALSE, trim_ws = TRUE)),
   #tar_target(Presences,
              #get_plant_presences2(GBIF_species),
              #pattern = map(GBIF_species)),
 #We import the csv so we don't have to run the whole thing again
-  tar_target(Presences, read_delim("GBIF_presences.csv",
-                                 delim = ";", escape_double = FALSE, trim_ws = TRUE)),
+  tar_target(Presences, read_delim("GBIF_presences2.csv",
+                                   delim = ";", escape_double = FALSE, locale = locale(decimal_mark = ",",
+                                   grouping_mark = ""), trim_ws = TRUE)),
 
 #Joining the data from GBIF and the fieldwork
   tar_target(joint_data,
              full_join(Species_observations,Presences)),
 
 #Creating a buffer of 500m around each species observation to account for dispersal
-  tar_target(buffer_500, make_buffer_rasterized(DT = Presences, file = LandUseTiff),
-             pattern = map(Presences),
+  tar_target(buffer_500_field, make_buffer_rasterized(DT = joint_data, file = LandUseTiff),
+             pattern = map(joint_data),
              iteration = "group"),
 #Transforming the buffer into a dataframe
-  tar_target(Long_Buffer, make_long_buffer(DT = buffer_500),
-             pattern = map(buffer_500),
+  tar_target(Long_Buffer_field, make_long_buffer(DT = buffer_500_field),
+             pattern = map(buffer_500_field),
              iteration = "group"),
+#Creating a buffer of 500m around each species observation to account for dispersal
+tar_target(buffer_500_gbif, make_buffer_rasterized(DT = Presences, file = LandUseTiff),
+           pattern = map(Presences),
+           iteration = "group"),
+#Transforming the buffer into a dataframe
+tar_target(Long_Buffer_gbif, make_long_buffer(DT = buffer_500_gbif),
+           pattern = map(buffer_500_gbif),
+           iteration = "group"),
 
 #Generating a phylogenetic tree of the observed species
   tar_target(Phylo_Tree, generate_tree(Presences)),
@@ -106,8 +121,8 @@ list(
              read_excel("species_lookup.xlsx")),
   tar_target(LanduseTable, generate_landuse_table(path = LanduseSuitability)),
   tar_target(Long_LU_table, Make_Long_LU_table(DF = LanduseTable)),
-  tar_target(Final_Presences, make_final_presences(Long_LU_table, Long_Buffer, LookUpTable),
-             pattern = map(Long_Buffer),
+  tar_target(Final_Presences, make_final_presences(Long_LU_table, Long_Buffer_gbif, LookUpTable),
+             pattern = map(Long_Buffer_gbif),
              iteration = "group"),
   tarchetypes::tar_group_by(joint_final_presences, as.data.frame(Final_Presences), Landuse),
   tar_target(rarity_weight, calc_rarity_weight(joint_final_presences)),

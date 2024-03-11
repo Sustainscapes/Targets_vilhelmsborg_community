@@ -16,6 +16,12 @@ get_field_presences_csv <- function(file) {
     dplyr::rename(decimalLatitude = lat, decimalLongitude = lon, family = familie, genus =slaegt, species = latinsk_navn)
 }
 
+#Read csv file
+load_csv_file <- function(file){
+  read_delim(file,
+             delim = ";", escape_double = FALSE, trim_ws = TRUE)
+}
+
 
 #Function for cleaning species names
 clean_species <- function(df){
@@ -71,7 +77,7 @@ get_plant_presences <- function(species){
  DF<- SDMWorkflows::GetOccs(Species = unique(species$species),
                         WriteFile = FALSE,
                         Log = FALSE,
-                        geometry = Aarhus_txt,
+                        geometry = Vilhelm_txt,
                         limit = 100000,
                         year='2012,2023')
     try(DF <- DF[[1]] |> dplyr::select(scientificName, decimalLatitude, decimalLongitude, family, genus, species))
@@ -87,7 +93,7 @@ get_plant_occurrences <- function() {
   # Search for occurrences in Denmark
   denmark_occurrences <- occ_search(kingdomKey = 6,
                                     facet = 'scientificName',
-                                    geometry = Aarhus_txt,
+                                    geometry = Vilhelm_txt,
                                     hasCoordinate = TRUE,
                                     year = '2012,2023',
                                     limit = 3000)  # adjust limit as needed
@@ -109,7 +115,7 @@ get_plant_presences2 <- function(species){
   DF <- SDMWorkflows::GetOccs(Species = unique(species$species),
                               WriteFile = FALSE,
                               Log = FALSE,
-                              geometry = Aarhus_txt,
+                              geometry = Vilhelm_txt,
                               limit = 100000,
                               year = '2012,2023')
 
@@ -374,8 +380,8 @@ Make_Long_LU_table <- function(DF){
   return(DF)
 }
 
-make_final_presences <- function(Long_LU_table, Long_Buffer, LookUpTable) {
-  if (nrow(Long_Buffer) == 0) {
+make_final_presences <- function(Long_LU_table, Long_Buffer_gbif, LookUpTable) {
+  if (nrow(Long_Buffer_gbif) == 0) {
     result2 <- data.frame(matrix(ncol = 3, nrow = 0))
     colnames(result2) <- c("cell", "species", "Landuse")
     result2 <- result2 |> dplyr::mutate(cell = as.integer(cell),
@@ -389,7 +395,7 @@ make_final_presences <- function(Long_LU_table, Long_Buffer, LookUpTable) {
   Long_LU_table[, Habitat := as.character(Habitat)]
 
   # Check feasible habitats for the particular species
-  Feasible_Landuses <- LookUpTable[species %chin% unique(Long_Buffer$species)]
+  Feasible_Landuses <- LookUpTable[species %chin% unique(Long_Buffer_gbif$species)]
 
   # Transform Landuse into habitat and remove the prefix
   Feasible_Landuses[, Habitat := stringr::str_remove_all(Landuse, "Forest")]
@@ -400,7 +406,7 @@ make_final_presences <- function(Long_LU_table, Long_Buffer, LookUpTable) {
   Available_Cells <- Long_LU_table[Habitat %chin% unique(Feasible_Landuses$Habitat)]
 
   # Check which of the available cells for the species can be in a habitat suitable for the species
-  FeasibleCells <- Long_Buffer[cell %chin% unique(Available_Cells$cell)]
+  FeasibleCells <- Long_Buffer_gbif[cell %chin% unique(Available_Cells$cell)]
 
   # Join all three data.tables
   result <- FeasibleCells[Available_Cells, on = "cell", nomatch = 0]

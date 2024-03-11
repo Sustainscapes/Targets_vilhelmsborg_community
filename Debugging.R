@@ -33,14 +33,17 @@ test_function(DF3)
 Clean_obs <- Clean[!(Clean$species %in% Missing),]
 
 write.csv2(Clean_obs,
-           file = "GBIF_observations.csv")
+           file = "GBIF_observations2.csv")
 
 GBIF_observations <- read_delim("GBIF_observations.csv",
                                 delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
 
 write.csv2(Presences,
-           file = "GBIF_presences.csv")
+           file = "GBIF_presences2.csv")
+
+write.csv2(joint_data,
+           file = "Field_and_GBIF_presences.csv")
 
 
 # Lookup table

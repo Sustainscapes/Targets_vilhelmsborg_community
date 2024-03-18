@@ -475,6 +475,17 @@ export_pd <- function(Results, path){
   paste0("Results/PD/PD_",unique(Results$Landuse), ".tif")
 }
 
+export_pd_field <- function(Results, path){
+  Temp <- as.numeric(terra::rast(path))
+  Temp[!is.na(Temp)] <- 0
+  PD <- Temp
+  Richness <- Temp
+  values(PD)[Results$cell] <- Results$PD
+  names(PD) <- paste("PD", unique(Results$Landuse), sep = "_")
+  BDRUtils::write_cog(PD, paste0("Results/PD_field/PD_",unique(Results$Landuse), ".tif"))
+  paste0("Results/PD_field/PD_",unique(Results$Landuse), ".tif")
+}
+
 export_richness <- function(Results, path){
   Temp <- as.numeric(terra::rast(path))
   Temp[!is.na(Temp)] <- 0
@@ -483,6 +494,16 @@ export_richness <- function(Results, path){
   names(Richness) <- paste("Richness", unique(Results$Landuse), sep = "_")
   BDRUtils::write_cog(Richness, paste0("Results/Richness/Richness_",unique(Results$Landuse), ".tif"))
   paste0("Results/Richness/Richness_",unique(Results$Landuse), ".tif")
+}
+
+export_richness_field <- function(Results, path){
+  Temp <- as.numeric(terra::rast(path))
+  Temp[!is.na(Temp)] <- 0
+  Richness <- Temp
+  values(Richness)[Results$cell] <- Results$SR
+  names(Richness) <- paste("Richness", unique(Results$Landuse), sep = "_")
+  BDRUtils::write_cog(Richness, paste0("Results/Richness_field/Richness_",unique(Results$Landuse), ".tif"))
+  paste0("Results/Richness_field/Richness_",unique(Results$Landuse), ".tif")
 }
 
 
@@ -524,4 +545,14 @@ export_rarity <- function(Results, path){
   names(Rarity) <- paste("Rarity", unique(Results$Landuse), sep = "_")
   BDRUtils::write_cog(Rarity, paste0("Results/Rarity/Rarity_",unique(Results$Landuse), ".tif"))
   paste0("Results/Rarity/Rarity_",unique(Results$Landuse), ".tif")
+}
+
+export_rarity_field <- function(Results, path){
+  Temp <- as.numeric(terra::rast(path))
+  Temp[!is.na(Temp)] <- 0
+  Rarity <- Temp
+  values(Rarity)[as.numeric(Results$cell)] <- Results$Irr
+  names(Rarity) <- paste("Rarity", unique(Results$Landuse), sep = "_")
+  BDRUtils::write_cog(Rarity, paste0("Results/Rarity_field/Rarity_",unique(Results$Landuse), ".tif"))
+  paste0("Results/Rarity_field/Rarity_",unique(Results$Landuse), ".tif")
 }

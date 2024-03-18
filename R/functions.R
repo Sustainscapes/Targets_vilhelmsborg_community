@@ -22,6 +22,13 @@ load_csv_file <- function(file){
              delim = ";", escape_double = FALSE, trim_ws = TRUE)
 }
 
+#Join and select columns
+join_select <- function(df1,df2){
+  temp <- full_join(df1,df2)
+  temp <- temp[,c("decimalLatitude","decimalLongitude", "family", "genus", "species")]
+  return(temp)
+}
+
 
 #Function for cleaning species names
 clean_species <- function(df){
@@ -360,6 +367,16 @@ Generate_Lookup <- function(Model, Thresholds) {
   joined_data[, .(species, Landuse, Pres)]  # Return the selected columns
 }
 
+#Read lookuptable
+Make_Look_Up_Table <- function(File){
+  Temp <- read_excel(File) %>%
+    dplyr::rename(species = Species) %>%
+    dplyr::select(-Num_presences, -Thres_90, -n_Landuse) %>%
+    tidyr::pivot_longer(-species,names_to = "Landuse", values_to = "Pres") %>%
+    dplyr::filter(Pres == 1) %>%
+    as.data.table()
+  return(Temp)
+}
 
 generate_landuse_table <- function(path){
   DF <- terra::rast(path) |>
@@ -398,8 +415,7 @@ make_final_presences <- function(Long_LU_table, Long_Buffer_gbif, LookUpTable) {
   Feasible_Landuses <- LookUpTable[species %chin% unique(Long_Buffer_gbif$species)]
 
   # Transform Landuse into habitat and remove the prefix
-  Feasible_Landuses[, Habitat := stringr::str_remove_all(Landuse, "Forest")]
-  Feasible_Landuses[, Habitat := stringr::str_remove_all(Habitat, "Open")]
+  Feasible_Landuses[, Habitat := Landuse]
   Feasible_Landuses[, Pres := NULL]
   Feasible_Landuses <- Feasible_Landuses[Landuse != "Exclude"]
   # Get only the cells that can become the feasible Landuses

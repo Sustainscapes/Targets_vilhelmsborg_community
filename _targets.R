@@ -42,7 +42,7 @@ list(
 
 #Path to the raster of current land use in terms of habitat types
   tar_target(LandUseTiff,
-             "Dir/LU_vilhelmsborg.tif",
+             "Dir/LU_Aarhus.tif",
              format = "file"),
 
 #Path to the presences data of plant species in existing nature plots (from fieldwork)
@@ -70,7 +70,7 @@ list(
   tar_target(GBIF_obs,
              gbif_observations(area = Vilhelm_txt)),
   tar_target(Clean_GBIF_obs,
-             clean_species(Filter_Counts(GBIF_obs))), #This output is cleaned for 18 species that did not work when I tried to run Presences, see debugging file.
+             clean_species(Filter_Counts(GBIF_obs))), #This output is cleaned for species that did not work when I tried to run Presences, see debugging file.
   tar_target(GBIF_species,
              read_delim("GBIF_observations2.csv",
                         delim = ";", escape_double = FALSE, trim_ws = TRUE)),
@@ -84,7 +84,7 @@ list(
 
 #Joining the data from GBIF and the fieldwork
   tar_target(joint_data,
-             full_join(Species_observations,Presences)),
+             join_select(Species_observations,Presences)),
 
 #Creating a buffer of 500m around each species observation to account for dispersal
   tar_target(buffer_500_field, make_buffer_rasterized(DT = joint_data, file = LandUseTiff),
@@ -118,7 +118,7 @@ tar_target(Long_Buffer_gbif, make_long_buffer(DT = buffer_500_gbif),
   #tar_target(LookUpTable, Generate_Lookup(Model = ModelAndPredict, Thresholds = Thresholds)),
 #We just use the lookup table that Derek has already created for all of DK
   tar_target(LookUpTable,
-             read_excel("species_lookup.xlsx")),
+             Make_Look_Up_Table("species_lookup.xlsx")),
   tar_target(LanduseTable, generate_landuse_table(path = LanduseSuitability)),
   tar_target(Long_LU_table, Make_Long_LU_table(DF = LanduseTable)),
   tar_target(Final_Presences, make_final_presences(Long_LU_table, Long_Buffer_gbif, LookUpTable),
@@ -133,7 +133,7 @@ tar_target(Long_Buffer_gbif, make_long_buffer(DT = buffer_500_gbif),
              calc_pd(joint_final_presences, Phylo_Tree),
              map(joint_final_presences),
              iteration = "group"),
-  tar_target(Richness, GetRichness(Final_Presences)),
+  tar_target(Richness, GetRichness(joint_final_presences)),
   tar_target(name = output_Richness,
              command = export_richness(Results = PhyloDiversity, path = LandUseTiff),
              map(PhyloDiversity),

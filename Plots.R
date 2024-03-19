@@ -1,4 +1,10 @@
 #Plotting the rasters:
+#The Vilhelmsborg area:
+c2000m <- vect("circle_2000_Vilhelm.shp")
+#The matrikel:
+matrikel <- vect("Matrikel.shp")
+Aarhus_LU <- rast("Dir/LU_Aarhus.tif")
+matrikel <- project(matrikel,Aarhus_LU)
 
 #Plot for richness:
 file_names_richness <- list.files("Cropped_rasters/GBIF_data/Richness/")

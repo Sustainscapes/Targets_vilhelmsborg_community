@@ -3,13 +3,15 @@ library(tidyterra)
 library(ggplot2)
 library(TroublemakeR)
 
-###For GBIF data, only cropped###
-#As inputs we have our Phylogenetic Diversity files
-PD <- list.files(path = "Cropped_rasters/GBIF_data/PD/", pattern = "^Crop_PD_.*\\.tif$", full.names = T) |> rast()
+setwd("C:/Users/Frederikke Natorp/OneDrive/Dokumenter/AU/Kandidat/Speciale/Targets_vilhelmsborg_community")
 
-PDNames <- list.files(path = "Cropped_rasters/GBIF_data/PD/", pattern = "^Crop_PD_.*\\.tif$", full.names = F) |>
+###For GBIF data, cropped and masked###
+#As inputs we have our Phylogenetic Diversity files
+PD <- list.files(path = "Cropped_masked_rasters/GBIF_data/PD/", pattern = "^PD_.*\\.tif$", full.names = T) |> rast()
+
+PDNames <- list.files(path = "Cropped_masked_rasters/GBIF_data/PD/", pattern = "^PD_.*\\.tif$", full.names = F) |>
   stringr::str_remove_all("_GBIF.tif") |>
-  stringr::str_remove_all("Crop_PD_")
+  stringr::str_remove_all("PD_")
 
 names(PD) <- PDNames
 
@@ -18,11 +20,11 @@ NormPD <- round((PD/max(minmax(PD))), 2)
 
 
 #We do the same with richness:
-Richness <- list.files(path = "Cropped_rasters/GBIF_data/Richness/", pattern = "^Crop_Richness_.*\\.tif$", full.names = T) |> rast()
+Richness <- list.files(path = "Cropped_masked_rasters/GBIF_data/Richness/", pattern = "^Richness_.*\\.tif$", full.names = T) |> rast()
 
-RichnessNames <- list.files(path = "Cropped_rasters/GBIF_data/Richness/", pattern = "^Crop_Richness_.*\\.tif$", full.names = F) |>
+RichnessNames <- list.files(path = "Cropped_masked_rasters/GBIF_data/Richness/", pattern = "^Richness_.*\\.tif$", full.names = F) |>
   stringr::str_remove_all("_GBIF.tif") |>
-  stringr::str_remove_all("Crop_Richness_")
+  stringr::str_remove_all("Richness_")
 
 names(Richness) <- RichnessNames
 
@@ -30,16 +32,19 @@ names(Richness) <- RichnessNames
 NormRichness <- round((Richness/max(minmax(Richness))), 2)
 
 #We do the same for Rarity:
-Rarity <- list.files(path = "Cropped_rasters/GBIF_data/Rarity/", pattern = "^Crop_Rarity_.*\\.tif$", full.names = T) |> rast()
+Rarity <- list.files(path = "Cropped_masked_rasters/GBIF_data/Rarity/", pattern = "^Rarity_.*\\.tif$", full.names = T) |> rast()
 
-RarityNames <- list.files(path = "Cropped_rasters/GBIF_data/Rarity/", pattern = "^Crop_Rarity_.*\\.tif$", full.names = F) |>
+RarityNames <- list.files(path = "Cropped_masked_rasters/GBIF_data/Rarity/", pattern = "^Rarity_.*\\.tif$", full.names = F) |>
   stringr::str_remove_all("_GBIF.tif") |>
-  stringr::str_remove_all("Crop_Rarity_")
+  stringr::str_remove_all("Rarity_")
 
 names(Rarity) <- RarityNames
 
 #We normalize Richness:
 NormRarity <- round((Rarity/max(minmax(Rarity))), 2)
+
+##Budget of cells:
+Budget <- sum(values(!is.na(NormPD)))
 
 
 ###Creating the problem###
@@ -59,4 +64,4 @@ TroublemakeR::species_suitability(Rastercurrent = NormRarity, species_names = Ra
 
 TroublemakeR::write_ampl_lines("param TransitionCost default 1", name = "ProblemVilhelmsborg")
 
-TroublemakeR::write_ampl_lines(paste("param b :=", selected_cells), name = "ProblemVilhelmsborg")
+TroublemakeR::write_ampl_lines(paste("param b :=", Budget), name = "ProblemVilhelmsborg")

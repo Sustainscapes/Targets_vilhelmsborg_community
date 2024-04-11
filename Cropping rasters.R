@@ -7,6 +7,11 @@ matrikel <- vect("Matrikel.shp")
 Aarhus_LU <- rast("Dir/LU_Aarhus.tif")
 matrikel <- project(matrikel,Aarhus_LU)
 
+Aarhus_habmod <- rast("HabSut/Aarhus.tif")
+Aarhus_crop <- crop(Aarhus_habmod,
+                    matrikel,
+                    snap = "out")
+
 #Cropping the raster from Aarhus municipality to vilhelmsborg area
 
 SR_OWR_crop <- terra::crop(SR_OWR,c2000m, snap = "out")

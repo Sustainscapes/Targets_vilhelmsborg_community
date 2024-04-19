@@ -67,13 +67,13 @@ list(
 
 #Loading plant species presences from GBIF
   #tar_target(GBIF_occ,get_plant_occurrences()),
-  tar_target(GBIF_obs,
-             gbif_observations(area = Vilhelm_txt)),
-  tar_target(Clean_GBIF_obs,
-             clean_species(Filter_Counts(GBIF_obs))), #This output is cleaned for species that did not work when I tried to run Presences, see debugging file.
-  tar_target(GBIF_species,
-             read_delim("GBIF_observations2.csv",
-                        delim = ";", escape_double = FALSE, trim_ws = TRUE)),
+  # tar_target(GBIF_obs,
+  #            gbif_observations(area = Vilhelm_txt)),
+  # tar_target(Clean_GBIF_obs,
+  #            clean_species(Filter_Counts(GBIF_obs))), #This output is cleaned for species that did not work when I tried to run Presences, see debugging file.
+  # tar_target(GBIF_species,
+  #            read_delim("GBIF_observations2.csv",
+  #                       delim = ";", escape_double = FALSE, trim_ws = TRUE)),
   #tar_target(Presences,
              #get_plant_presences2(GBIF_species),
              #pattern = map(GBIF_species)),
@@ -104,7 +104,9 @@ tar_target(Long_Buffer_gbif, make_long_buffer(DT = buffer_500_gbif),
            iteration = "group"),
 
 #Generating a phylogenetic tree of the observed species
+#For GBIF data:
   tar_target(Phylo_Tree, generate_tree(Presences)),
+#For GBIF+Field data:
   tar_target(Phylo_Tree_field, generate_tree(joint_data)),
 
 #Modelling the the species distribution based on the habitat types in the raster map of present nature

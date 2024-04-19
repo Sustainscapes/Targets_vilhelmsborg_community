@@ -1,0 +1,283 @@
+---
+title: "Solutions for Frederikke"
+author: "Derek Corcoran"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, error = FALSE, message = FALSE)
+library(readr)
+library(terra)
+library(dplyr)
+library(tidyterra)
+library(ggplot2)
+```
+
+In this document we will compile the results of the optimization, as shown in other examples there is a tradeoff between contiguity and biodiversity, since we have 6 solutions we will gather in this report only the closest solution to an equilibrium
+
+## Scenario 1 Optimization for GBIF data only
+
+First we need to check at what value we find the best balance
+
+```{r balance1}
+OptimalVilhelm <- read_table("OptimalVilhelm_GBIF.txt",
+                             col_names = FALSE) #|>
+#  mutate_if(is.numeric, ~round(.x, digits = 2))
+
+colnames(OptimalVilhelm) <- c("Biodiversity", "Contiguity","ContiguityBonus")
+
+
+OptimalLong <- OptimalVilhelm |>
+  tidyr::pivot_longer(Biodiversity:Contiguity, names_to = "Part", values_to = "Contribution")
+
+ggplot(OptimalLong, aes(x = ContiguityBonus, y = Contribution, group = Part)) + geom_path(aes(color = Part)) + geom_point(aes(color = Part)) + theme_bw()
+
+Selected <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::pull(ContiguityBonus) |> max()
+```
+
+From this we can see that the optimal value for the most balanced Contiguity bonus is `r Selected`, based on that the solution within this problem is
+
+```{r Solution1}
+SolutionOptimalVilhelm <- read_table("SolutionOptimalVilhelm_GBIF.txt",
+                                     col_names = FALSE) |> magrittr::set_colnames(c("cell", "landuse", "des", "bonus"))
+
+
+BalancedSolution <- SolutionOptimalVilhelm |> dplyr::filter(bonus == Selected)
+
+Soulution_GBIF <- terra::rast("Future_wet_areas_85mmrain_resamp.tif")
+
+values(Soulution_GBIF) <- NA
+
+values(Soulution_GBIF)[BalancedSolution$cell] <- BalancedSolution$landuse
+
+BDRUtils::write_cog(Soulution_GBIF, "Solution_gbif.tif")
+
+ggplot() + geom_spatraster(data = Soulution_GBIF) + scale_fill_discrete(na.translate = F)
+
+```
+
+
+## Scenario 2 Optimization for field data
+
+First we need to check at what value we find the best balance
+
+```{r balance2}
+OptimalVilhelm <- read_table("OptimalVilhelm_field.txt",
+                             col_names = FALSE) #|>
+#  mutate_if(is.numeric, ~round(.x, digits = 2))
+
+colnames(OptimalVilhelm) <- c("Biodiversity", "Contiguity","ContiguityBonus")
+
+
+OptimalLong <- OptimalVilhelm |>
+  tidyr::pivot_longer(Biodiversity:Contiguity, names_to = "Part", values_to = "Contribution")
+
+ggplot(OptimalLong, aes(x = ContiguityBonus, y = Contribution, group = Part)) + geom_path(aes(color = Part)) + geom_point(aes(color = Part)) + theme_bw()
+
+Selected <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::pull(ContiguityBonus) |> max()
+```
+
+From this we can see that the optimal value for the most balanced Contiguity bonus is `r Selected`, based on that the solution within this problem is
+
+```{r Solution2}
+SolutionOptimalVilhelm <- read_table("SolutionOptimalVilhelm_field.txt",
+                                     col_names = FALSE) |> magrittr::set_colnames(c("cell", "landuse", "des", "bonus"))
+
+
+BalancedSolution <- SolutionOptimalVilhelm |> dplyr::filter(bonus == Selected)
+
+Soulution_field <- terra::rast("Future_wet_areas_85mmrain_resamp.tif")
+
+values(Soulution_field) <- NA
+
+values(Soulution_field)[BalancedSolution$cell] <- BalancedSolution$landuse
+
+BDRUtils::write_cog(Soulution_field, "Solution_field.tif")
+
+ggplot() + geom_spatraster(data = Soulution_field) + scale_fill_discrete(na.translate = F)
+
+```
+
+
+
+## Scenario 3 Optimization for GBIF data with Scalgo
+
+First we need to check at what value we find the best balance
+
+```{r balance3}
+OptimalVilhelm <- read_table("OptimalVilhelm_GBIF_wet.txt",
+                             col_names = FALSE) #|>
+#  mutate_if(is.numeric, ~round(.x, digits = 2))
+
+colnames(OptimalVilhelm) <- c("Biodiversity", "Contiguity","ContiguityBonus")
+
+
+OptimalLong <- OptimalVilhelm |>
+  tidyr::pivot_longer(Biodiversity:Contiguity, names_to = "Part", values_to = "Contribution")
+
+ggplot(OptimalLong, aes(x = ContiguityBonus, y = Contribution, group = Part)) + geom_path(aes(color = Part)) + geom_point(aes(color = Part)) + theme_bw()
+
+Selected <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::pull(ContiguityBonus) |> max()
+```
+
+From this we can see that the optimal value for the most balanced Contiguity bonus is `r Selected`, based on that the solution within this problem is
+
+```{r Solution3}
+SolutionOptimalVilhelm <- read_table("SolutionOptimalVilhelm_GBIF_wet.txt",
+                                     col_names = FALSE) |> magrittr::set_colnames(c("cell", "landuse", "des", "bonus"))
+
+
+BalancedSolution <- SolutionOptimalVilhelm |> dplyr::filter(bonus == Selected)
+
+Soulution_gbif_wet <- terra::rast("Future_wet_areas_85mmrain_resamp.tif")
+
+values(Soulution_gbif_wet) <- NA
+
+values(Soulution_gbif_wet)[BalancedSolution$cell] <- BalancedSolution$landuse
+
+BDRUtils::write_cog(Soulution_gbif_wet, "Solution_gbif_wet.tif")
+
+ggplot() + geom_spatraster(data = Soulution_gbif_wet) + scale_fill_discrete(na.translate = F)
+
+```
+
+
+## Scenario 4 Optimization for field data with Rain
+
+First we need to check at what value we find the best balance
+
+```{r balance4}
+OptimalVilhelm <- read_table("OptimalVilhelm_field_wet.txt",
+                             col_names = FALSE) #|>
+#  mutate_if(is.numeric, ~round(.x, digits = 2))
+
+colnames(OptimalVilhelm) <- c("Biodiversity", "Contiguity","ContiguityBonus")
+
+
+OptimalLong <- OptimalVilhelm |>
+  tidyr::pivot_longer(Biodiversity:Contiguity, names_to = "Part", values_to = "Contribution")
+
+ggplot(OptimalLong, aes(x = ContiguityBonus, y = Contribution, group = Part)) + geom_path(aes(color = Part)) + geom_point(aes(color = Part)) + theme_bw()
+
+Selected <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::pull(ContiguityBonus) |> max()
+```
+
+From this we can see that the optimal value for the most balanced Contiguity bonus is `r Selected`, based on that the solution within this problem is
+
+```{r Solution4}
+SolutionOptimalVilhelm <- read_table("SolutionOptimalVilhelm_field_wet.txt",
+                                     col_names = FALSE) |> magrittr::set_colnames(c("cell", "landuse", "des", "bonus"))
+
+
+BalancedSolution <- SolutionOptimalVilhelm |> dplyr::filter(bonus == Selected)
+
+Soulution_field_wet <- terra::rast("Future_wet_areas_85mmrain_resamp.tif")
+
+values(Soulution_field_wet) <- NA
+
+values(Soulution_field_wet)[BalancedSolution$cell] <- BalancedSolution$landuse
+
+BDRUtils::write_cog(Soulution_field_wet, "Solution_field_wet.tif")
+
+ggplot() + geom_spatraster(data = Soulution_field_wet) + scale_fill_discrete(na.translate = F)
+
+```
+
+## Scenario 5 Optimization for GBIF data with Scalgo and proportions
+
+First we need to check at what value we find the best balance
+
+```{r balance5}
+OptimalVilhelm <- read_table("OptimalVilhelm_GBIF_prop_wet_full.txt",
+                             col_names = FALSE) #|>
+#  mutate_if(is.numeric, ~round(.x, digits = 2))
+
+colnames(OptimalVilhelm) <- c("Biodiversity", "Contiguity","ContiguityBonus")
+
+
+OptimalLong <- OptimalVilhelm |>
+  tidyr::pivot_longer(Biodiversity:Contiguity, names_to = "Part", values_to = "Contribution")
+
+ggplot(OptimalLong, aes(x = ContiguityBonus, y = Contribution, group = Part)) + geom_path(aes(color = Part)) + geom_point(aes(color = Part)) + theme_bw()
+
+Selected <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::pull(ContiguityBonus) |> max()
+```
+
+From this we can see that the optimal value for the most balanced Contiguity bonus is `r Selected`, based on that the solution within this problem is
+
+```{r Solution5}
+SolutionOptimalVilhelm <- read_table("SolutionOptimalVilhelm_GBIF_prop_wet_full.txt",
+                                     col_names = FALSE) |> magrittr::set_colnames(c("cell", "landuse", "des", "bonus"))
+
+
+BalancedSolution <- SolutionOptimalVilhelm |> dplyr::filter(bonus == Selected)
+
+Solution_GBIF_prop_wet <- terra::rast("Future_wet_areas_85mmrain_resamp.tif")
+
+values(Solution_GBIF_prop_wet) <- NA
+
+values(Solution_GBIF_prop_wet)[BalancedSolution$cell] <- BalancedSolution$landuse
+
+BDRUtils::write_cog(Solution_GBIF_prop_wet, "Solution_GBIF_prop_wet.tif")
+
+ggplot() + geom_spatraster(data = Solution_GBIF_prop_wet) + scale_fill_discrete(na.translate = F)
+
+```
+
+## Scenario 6 Optimization for field data with Rain and Forest
+
+First we need to check at what value we find the best balance
+
+```{r balance6}
+OptimalVilhelm <- read_table("OptimalVilhelm_field_wet_forest.txt",
+                             col_names = FALSE) #|>
+#  mutate_if(is.numeric, ~round(.x, digits = 2))
+
+colnames(OptimalVilhelm) <- c("Biodiversity", "Contiguity","ContiguityBonus")
+
+
+OptimalLong <- OptimalVilhelm |>
+  tidyr::pivot_longer(Biodiversity:Contiguity, names_to = "Part", values_to = "Contribution")
+
+ggplot(OptimalLong, aes(x = ContiguityBonus, y = Contribution, group = Part)) + geom_path(aes(color = Part)) + geom_point(aes(color = Part)) + theme_bw()
+
+Selected <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::pull(ContiguityBonus) |> max()
+
+Biodiversity <- OptimalVilhelm |> dplyr::filter(Biodiversity > Contiguity) |> dplyr::filter(ContiguityBonus == max(ContiguityBonus))|> dplyr::pull(Biodiversity)
+```
+
+From this we can see that the optimal value for the most balanced Contiguity bonus is `r Selected`, with a biodiversity contribution of  based on that the solution within this problem is
+
+```{r Solution6}
+SolutionOptimalVilhelm <- read_table("SolutionOptimalVilhelm_field_wet_forest.txt",
+                                     col_names = FALSE) |> magrittr::set_colnames(c("cell", "landuse", "des", "bonus"))
+
+
+BalancedSolution <- SolutionOptimalVilhelm |> dplyr::filter(bonus == Selected)
+
+Soulution_field_wet_forest <- terra::rast("Future_wet_areas_85mmrain_resamp.tif")
+
+values(Soulution_field_wet_forest) <- NA
+
+values(Soulution_field_wet_forest)[BalancedSolution$cell] <- BalancedSolution$landuse
+
+BDRUtils::write_cog(Soulution_field_wet_forest, "Solution_field_wet_forest.tif")
+
+ggplot() + geom_spatraster(data = Soulution_field_wet_forest) + scale_fill_discrete(na.translate = F)
+
+```
+
+
+## All solutions
+
+here is a comparison of all solutions
+
+```{r}
+Sols <- c(Soulution_GBIF, Soulution_field, Soulution_gbif_wet, Soulution_field_wet, Solution_GBIF_prop_wet, Soulution_field_wet_forest)
+
+names(Sols) <- c("Solution_GBIF", "Solution_field", "Solution_gbif_wet", "Solution_field_wet", "Solution_GBIF_prop_wet", "Solution_field_wet_forest")
+
+ggplot() + geom_spatraster(data = Sols) + scale_fill_discrete(na.translate = F) + facet_wrap(~lyr) + theme_void()
+```
+

@@ -15,7 +15,7 @@ library(data.table)
 
 tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magrittr", "maxnet", "purrr", "Rarity", "readxl",
                             "SDMWorkflows", "stringr", "tidyr", "tibble","terra", "V.PhyloMaker", "BDRUtils", "readr"),
-               controller = crew_controller_local(workers = 4),
+               controller = crew_controller_local(workers = 40),
                error = "null") # Force skip non-debugging outdated targets)
 
 #Polygon for Aarhus municipality
@@ -37,12 +37,12 @@ Vilhelm_txt <- c2000m_proj %>% st_as_sf() %>% st_bbox() %>% st_as_sfc() %>% st_a
 list(
 #Path to the Habitat model raster output of potential habitat types
   tar_target(LanduseSuitability,
-             "HabSut/Aarhus.tif",
+             "HabSutDownscaled/Aarhus.tif",
              format = "file"),
 
 #Path to the raster of current land use in terms of habitat types
   tar_target(LandUseTiff,
-             "Dir/LU_Aarhus.tif",
+             "DirDownscaled/LU_Aarhus.tif",
              format = "file"),
 
 #Path to the presences data of plant species in existing nature plots (from fieldwork)

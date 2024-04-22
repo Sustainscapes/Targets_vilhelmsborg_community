@@ -464,11 +464,31 @@ calc_pd <- function(Fin, Tree){
   return(PD)
 }
 
+export_final_presences<- function(DF, folder){
+  Landuses <- unique(DF$Landuse)
+  for(i in 1:length(Landuses)){
+    if(!dir.exists(paste0(folder, "/", Landuses[i]))){
+      dir.create(paste0(folder, "/", Landuses[i]))
+    }
+    Temp <- DF[Landuse %chin% Landuses[i]]
+    readr::write_csv(Temp, paste0(folder, "/", Landuses[i],"/", janitor::make_clean_names(unique(Temp$species)),".csv"))
+  }
+}
+
+GetLandusePresences <- function(Landuse){
+  DT <- list.files(path = paste0("GBIF_Final_Presences/", Landuse, "/"), full.names = T) |>
+    purrr::map(data.table::fread) |>
+    purrr::keep(function(x) ncol(x) == 3) |>
+    data.table::rbindlist()
+  return(DT)
+}
+
 export_pd <- function(Results, path){
   Temp <- as.numeric(terra::rast(path))
   Temp[!is.na(Temp)] <- 0
   PD <- Temp
   Richness <- Temp
+  Results <- Results[cell > 0 & !is.na(cell)]
   values(PD)[Results$cell] <- Results$PD
   names(PD) <- paste("PD", unique(Results$Landuse), sep = "_")
   BDRUtils::write_cog(PD, paste0("Results/PD/PD_",unique(Results$Landuse), ".tif"))
@@ -480,6 +500,7 @@ export_pd_field <- function(Results, path){
   Temp[!is.na(Temp)] <- 0
   PD <- Temp
   Richness <- Temp
+  Results <- Results[cell > 0 & !is.na(cell)]
   values(PD)[Results$cell] <- Results$PD
   names(PD) <- paste("PD", unique(Results$Landuse), sep = "_")
   BDRUtils::write_cog(PD, paste0("Results/PD_field/PD_",unique(Results$Landuse), ".tif"))
@@ -490,6 +511,7 @@ export_richness <- function(Results, path){
   Temp <- as.numeric(terra::rast(path))
   Temp[!is.na(Temp)] <- 0
   Richness <- Temp
+  Results <- Results[cell > 0 & !is.na(cell)]
   values(Richness)[Results$cell] <- Results$SR
   names(Richness) <- paste("Richness", unique(Results$Landuse), sep = "_")
   BDRUtils::write_cog(Richness, paste0("Results/Richness/Richness_",unique(Results$Landuse), ".tif"))
@@ -500,6 +522,7 @@ export_richness_field <- function(Results, path){
   Temp <- as.numeric(terra::rast(path))
   Temp[!is.na(Temp)] <- 0
   Richness <- Temp
+  Results <- Results[cell > 0 & !is.na(cell)]
   values(Richness)[Results$cell] <- Results$SR
   names(Richness) <- paste("Richness", unique(Results$Landuse), sep = "_")
   BDRUtils::write_cog(Richness, paste0("Results/Richness_field/Richness_",unique(Results$Landuse), ".tif"))
@@ -526,6 +549,7 @@ calc_rarity <- function(Fin, RW){
   Landuse <- unique(Fin$Landuse)
   Fin[,Pres := 1]
   Fin[, species := stringr::str_replace_all(species, " ", "_")]
+  Fin <- Fin[cell > 0 & !is.na(cell)]
   Fin2 <- dcast(Fin, cell~species, value.var="Pres", fill = 0)
   Fin2 <- tibble::column_to_rownames(as.data.frame(Fin2), "cell")
   colnames(Fin2) <- stringr::str_replace_all(colnames(Fin2), "_", " ")

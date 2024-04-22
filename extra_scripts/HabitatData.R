@@ -6,4 +6,19 @@ WetPoor <- terra::rast("O:/Nat_Sustain-proj/_user/HanneNicolaisen_au704629/Data/
 DryRich <- terra::rast("O:/Nat_Sustain-proj/_user/HanneNicolaisen_au704629/Data/Habitat_Ref_Map/RF_predict_binary_DryRich_thresh_1.tif")
 DryPoor <- terra::rast("O:/Nat_Sustain-proj/_user/HanneNicolaisen_au704629/Data/Habitat_Ref_Map/RF_predict_binary_DryPoor_thresh_1.tif")
 
-AllHabs <- c(WetRich, WetRich, WetPoor, WetPoor, DryRich, DryRich, DryPoor, DryPoor)
+AllHabs <- c(DryPoor, DryRich, WetPoor, WetRich, DryPoor, DryRich, WetPoor, WetRich)
+names(AllHabs) <- c("ForestDryPoor", "ForestDryRich", "ForestWetPoor", "ForestWetRich",
+                    "OpenDryPoor", "OpenDryRich", "OpenWetPoor", "OpenWetRich")
+
+Aarhus <- geodata::gadm(country = "Denmark", level = 2, path = getwd())
+
+Aarhus <- Aarhus[Aarhus$NAME_2 == "Århus",]
+
+Aarhus <- Aarhus |> terra::project(terra::crs(AllHabs))
+
+
+AllHabs <- AllHabs |>
+  terra::crop(Aarhus) |>
+  terra::mask(Aarhus)
+
+BDRUtils::write_cog(AllHabs, "HabSut/Aarhus.tif")

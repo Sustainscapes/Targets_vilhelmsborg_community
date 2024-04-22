@@ -12,6 +12,10 @@ library(readxl)
 library(readr)
 library(data.table)
 
+# Define the Landuse vector
+
+
+
 
 tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magrittr", "maxnet", "purrr", "Rarity", "readxl",
                             "SDMWorkflows", "stringr", "tidyr", "tibble","terra", "V.PhyloMaker", "BDRUtils", "readr"),
@@ -129,12 +133,28 @@ tar_target(Long_Buffer_gbif, make_long_buffer(DT = buffer_500_gbif),
   tar_target(Final_Presences, make_final_presences(Long_LU_table, Long_Buffer_gbif, LookUpTable),
              pattern = map(Long_Buffer_gbif),
              iteration = "group"),
-  tarchetypes::tar_group_by(joint_final_presences, as.data.frame(Final_Presences), Landuse),
+  tar_target(exported_gbif_presences, export_final_presences(Final_Presences, folder = "GBIF_Final_Presences"),
+             pattern = map(Final_Presences),
+             iteration = "group",
+             format = "file"),
+  #tarchetypes::tar_group_by(joint_final_presences, as.data.frame(Final_Presences), Landuse),
+  tar_target(Landuse, c("ForestDryPoor",  "ForestDryRich", "ForestWetPoor",
+                                   "ForestWetRich",  "OpenDryPoor", "OpenDryRich",
+                                   "OpenWetPoor", "OpenWetRich")),
+  tar_target(
+    joint_final_presences,
+    GetLandusePresences(Landuse = Landuse),
+    pattern = map(Landuse)
+  ),
 
 #Final presences GBIF+Field:
   tar_target(Final_Presences_field, make_final_presences(Long_LU_table, Long_Buffer_field, LookUpTable),
              pattern = map(Long_Buffer_field),
              iteration = "group"),
+tar_target(exported_field_presences, export_final_presences(Final_Presences_field, folder = "Field_Final_Presences"),
+           pattern = map(Final_Presences),
+           iteration = "group",
+           format = "file"),
   tarchetypes::tar_group_by(joint_final_presences_field, as.data.frame(Final_Presences_field), Landuse),
 
 #output for GBIF data:

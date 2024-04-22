@@ -4,10 +4,10 @@ Vilhelm_bbox <- c2000m %>% st_as_sf() %>% st_bbox()
 
 #The matrikel:
 matrikel <- vect("Matrikel.shp")
-Aarhus_LU <- rast("Dir/LU_Aarhus.tif")
+Aarhus_LU <- rast("DirDownscaled/LU_Aarhus.tif")
 matrikel <- project(matrikel,Aarhus_LU)
 
-Aarhus_habmod <- rast("HabSut/Aarhus.tif")
+Aarhus_habmod <- rast("HabSutDownscaled/Aarhus.tif")
 Aarhus_crop <- crop(Aarhus_habmod,
                     matrikel,
                     snap = "out")

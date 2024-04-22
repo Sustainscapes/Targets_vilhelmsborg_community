@@ -23,30 +23,30 @@ tar_option_set(packages = c("data.table", "dplyr", "ENMeval","janitor", "magritt
                error = "null") # Force skip non-debugging outdated targets)
 
 #Polygon for Aarhus municipality
-Aarhus <- geodata::gadm(country = "denmark", level = 2, path = getwd())
+#Aarhus <- geodata::gadm(country = "denmark", level = 2, path = getwd())
 
-Aarhus <- Aarhus[Aarhus$NAME_2 == "Århus",]
+#Aarhus <- Aarhus[Aarhus$NAME_2 == "Århus",]
 
-Aarhus_txt <- Aarhus|>       #Here we make it as a square polygon (bounding box)
-  st_as_sf() |>
-  st_bbox() |>
-  st_as_sfc() |>
-  st_as_text()
+#Aarhus_txt <- Aarhus|>       #Here we make it as a square polygon (bounding box)
+#  st_as_sf() |>
+#  st_bbox() |>
+#  st_as_sfc() |>
+#  st_as_text()
 
 #Polygon for 2000m radius around Vilhelmsborg
-c2000m <- vect("circle_2000_Vilhelm.shp")
-c2000m_proj <- project(c2000m,"+proj=longlat +datum=WGS84")
-Vilhelm_txt <- c2000m_proj %>% st_as_sf() %>% st_bbox() %>% st_as_sfc() %>% st_as_text()
+#c2000m <- vect("circle_2000_Vilhelm.shp")
+#c2000m_proj <- project(c2000m,"+proj=longlat +datum=WGS84")
+#Vilhelm_txt <- c2000m_proj %>% st_as_sf() %>% st_bbox() %>% st_as_sfc() %>% st_as_text()
 
 list(
 #Path to the Habitat model raster output of potential habitat types
   tar_target(LanduseSuitability,
-             "HabSutDownscaled/Aarhus.tif",
+             "HabSutDownscaledCroped/Aarhus.tif",
              format = "file"),
 
 #Path to the raster of current land use in terms of habitat types
   tar_target(LandUseTiff,
-             "DirDownscaled/LU_Aarhus.tif",
+             "DirDownscaledCroped/LU_Aarhus.tif",
              format = "file"),
 
 #Path to the presences data of plant species in existing nature plots (from fieldwork)

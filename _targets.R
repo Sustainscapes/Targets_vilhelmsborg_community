@@ -143,9 +143,14 @@ tar_target(Long_Buffer_gbif, make_long_buffer(DT = buffer_500_gbif),
                                    "OpenWetPoor", "OpenWetRich")),
   tar_target(
     joint_final_presences,
-    GetLandusePresences(Landuse = Landuse),
+    GetLandusePresences(folder = "GBIF_Final_Presences/", Landuse = Landuse),
     pattern = map(Landuse)
   ),
+tar_target(
+  joint_final_presences_field,
+  GetLandusePresences(folder = "Field_Final_Presences",Landuse = Landuse),
+  pattern = map(Landuse)
+),
 
 #Final presences GBIF+Field:
   tar_target(Final_Presences_field, make_final_presences(Long_LU_table, Long_Buffer_field, LookUpTable),
@@ -155,7 +160,7 @@ tar_target(exported_field_presences, export_final_presences(Final_Presences_fiel
            pattern = map(Final_Presences),
            iteration = "group",
            format = "file"),
-  tarchetypes::tar_group_by(joint_final_presences_field, as.data.frame(Final_Presences_field), Landuse),
+  #tarchetypes::tar_group_by(joint_final_presences_field, as.data.frame(Final_Presences_field), Landuse),
 
 #output for GBIF data:
   tar_target(rarity_weight, calc_rarity_weight(joint_final_presences)),

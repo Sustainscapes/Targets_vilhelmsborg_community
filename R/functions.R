@@ -471,15 +471,18 @@ export_final_presences<- function(DF, folder){
       dir.create(paste0(folder, "/", Landuses[i]))
     }
     Temp <- DF[Landuse %chin% Landuses[i]]
-    readr::write_csv(Temp, paste0(folder, "/", Landuses[i],"/", janitor::make_clean_names(unique(Temp$species)),".csv"))
+    readr::write_csv(Temp,
+                     paste0(folder, "/", Landuses[i],"/", janitor::make_clean_names(unique(Temp$species)),".csv"),
+                     append = T)
   }
 }
 
-GetLandusePresences <- function(Landuse){
-  DT <- list.files(path = paste0("GBIF_Final_Presences/", Landuse, "/"), full.names = T) |>
+GetLandusePresences <- function(folder, Landuse){
+  DT <- list.files(path = paste0(folder, Landuse, "/"), full.names = T) |>
     purrr::map(data.table::fread) |>
     purrr::keep(function(x) ncol(x) == 3) |>
     data.table::rbindlist()
+  colnames(DT) <- c("cell", "species", "Landuse")
   return(DT)
 }
 
@@ -531,6 +534,7 @@ export_richness_field <- function(Results, path){
 
 
 calc_rarity_weight <- function(df){
+
   JF <- as.data.table(df)
 
 
@@ -565,8 +569,8 @@ export_rarity <- function(Results, path){
   Temp <- as.numeric(terra::rast(path))
   Temp[!is.na(Temp)] <- 0
   Rarity <- Temp
-  values(Rarity)[as.numeric(Results$cell)] <- Results$Irr
   names(Rarity) <- paste("Rarity", unique(Results$Landuse), sep = "_")
+  terra::values(Rarity)[as.numeric(Results$cell)] <- Results$Irr
   BDRUtils::write_cog(Rarity, paste0("Results/Rarity/Rarity_",unique(Results$Landuse), ".tif"))
   paste0("Results/Rarity/Rarity_",unique(Results$Landuse), ".tif")
 }
